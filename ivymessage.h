@@ -23,6 +23,7 @@ public:
     MsgType type;
     quint16 identifier;
     QList<QByteArray> parameters;
+    QString* content();
 
     Subscription *subscription;
     IvyClient *client;

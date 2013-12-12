@@ -36,6 +36,12 @@ IvyMessage::IvyMessage(QByteArray *data, IvyClient *client) :
         subscription = new Subscription(identifier,&pattern,client);
     }
 
+    // Message Type 2: Message (with regexp response)
+    if (type == Msg) {
+        parameters = data->mid(stxPos+1,data->length()-stxPos-1).split(ARG_END);
+        parameters.removeLast();
+    }
+
     // Message Type 6: Start Regexp
     if (type == StartRegexp)
     {
@@ -55,4 +61,23 @@ QString IvyMessage::getPeerName()
         return QString(data->mid(stxPos+1,data->length()-stxPos+1));
     else
         return QString();
+}
+
+QString* IvyMessage::content()
+{
+    QString *output = 0;
+    qDebug() << type;
+    qDebug() << parameters.count();
+    if (type == Msg) {
+        if (parameters.count() > 0) output = new QString();
+        for (int i = 0; i < parameters.count(); i++)
+        {
+            qDebug() << parameters.at(i);
+            output->append(parameters.at(i));
+            if (i < parameters.count() - 1) output->append(", ");
+        }
+    }
+
+    if (output == 0) output = new QString("unknown");
+    return output;
 }
