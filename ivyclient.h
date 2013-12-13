@@ -38,7 +38,7 @@ public:
     void processBye();
     void sendSubscriptions();
     void updateSubscription(Subscription *subscription);
-    void sendSubscriptionDeletion(quint16 identifier);
+    void deleteSubscription(quint16 identifier);
 
     int sendMessage(MsgType type, quint32 identifier, QByteArray *data = 0);
 

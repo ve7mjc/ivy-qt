@@ -33,6 +33,7 @@ void Subscription::init()
 {
     // Default QMetaObject for future checks
     receiver = 0;
+    active = true;
 }
 
 void Subscription::setPattern(const QString pattern)
@@ -42,7 +43,7 @@ void Subscription::setPattern(const QString pattern)
 
 const QString Subscription::pattern()
 {
-    return regexp.pattern();
+    return this->regexp.pattern();
 }
 
 // Return a pointer to a QList of pointers to QByteArray matches

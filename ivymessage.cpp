@@ -5,6 +5,7 @@ IvyMessage::IvyMessage(IvyClient *client) :
 {
     this->client = client;
     this->subscription = 0;
+    this->identifier = -1;
 
     valid = false;
 }
@@ -12,9 +13,11 @@ IvyMessage::IvyMessage(IvyClient *client) :
 IvyMessage::IvyMessage(QByteArray *data, IvyClient *client) :
     QObject(client)
 {
+    this->subscription = 0;
     this->data = data;
     this->client = client;
     this->m_date = this->m_date.currentDateTime();
+    this->identifier -1;
 
     // Trim message of EOL char if exists
     if (data->right(1).data() == "\n") data->remove(data->count()-1,1);
@@ -63,21 +66,17 @@ QString IvyMessage::getPeerName()
         return QString();
 }
 
-QString* IvyMessage::content()
+// Return verbose QString with match/parameters
+// Add comma and spaces seperation
+// Example "Match2, Match2"
+QString IvyMessage::content()
 {
-    QString *output = 0;
-    qDebug() << type;
-    qDebug() << parameters.count();
+    QString content;
     if (type == Msg) {
-        if (parameters.count() > 0) output = new QString();
-        for (int i = 0; i < parameters.count(); i++)
-        {
-            qDebug() << parameters.at(i);
-            output->append(parameters.at(i));
-            if (i < parameters.count() - 1) output->append(", ");
+        for (int i = 0; i < parameters.count(); i++) {
+            content.append(parameters.at(i));
+            if (i < parameters.count() - 1) content.append(", ");
         }
     }
-
-    if (output == 0) output = new QString("unknown");
-    return output;
+    return content;
 }

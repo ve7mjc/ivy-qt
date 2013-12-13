@@ -47,8 +47,9 @@ int IvyQt::IvyBind(const QString *pattern, QObject *receiver, const char *member
     // Create incrementing identifier
     // Add Subscription to local list of subscriptions
     Subscription *sub = new Subscription(pattern,this);
-    sub->setIdentifier(this->subscriptions.count());
-    this->subscriptions.append(sub);
+    if (!subscriptions.count()) sub->setIdentifier(0);
+    else sub->setIdentifier(subscriptions.at(subscriptions.count()-1)->identifier+1);
+    subscriptions.append(sub);
 
     // Manage slot if specified
     if (receiver && member) {
@@ -70,6 +71,18 @@ int IvyQt::IvyBind(const QString *pattern, QObject *receiver, const char *member
     // Return Subscription Identifier
     return sub->identifier;
 
+}
+
+int IvyQt::IvyUnBind(quint16 identifier)
+{
+    // Remove
+    subscriptions.removeOne(subscriptionByIdentifier(identifier));
+
+    if (this->active)
+        for (int i = 0; i < this->clients.count(); i++)
+            this->clients.at(i)->deleteSubscription(identifier);
+
+    return false;
 }
 
 QByteArray IvyQt::generateAppId(quint16 port)

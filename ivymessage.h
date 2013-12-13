@@ -21,9 +21,9 @@ public:
     QByteArray *data;
 
     MsgType type;
-    quint16 identifier;
+    qint32 identifier;
     QList<QByteArray> parameters;
-    QString* content();
+    QString content();
 
     Subscription *subscription;
     IvyClient *client;

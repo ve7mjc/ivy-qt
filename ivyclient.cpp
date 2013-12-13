@@ -161,7 +161,6 @@ void IvyClient::processMessage(IvyMessage *msg)
             // emit signal if this is a post-ready subscription
             if (ready) emit ivyClientSubscription(this,s,false);
         }
-
     }
 
     // Message Type 2: Text Message
@@ -368,7 +367,7 @@ void IvyClient::updateSubscription(Subscription *subscription)
 
 // Request remote client to delete subscription
 // based on identifier
-void IvyClient::sendSubscriptionDeletion(quint16 identifier)
+void IvyClient::deleteSubscription(quint16 identifier)
 {
     // Assemble Message Type 4 - Subscription Deletion
     sendMessage(DelRegexp,identifier);

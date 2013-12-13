@@ -23,6 +23,7 @@ public:
     const QString pattern();
 
     void setIdentifier(quint16 identifier);
+    bool isActive() { return active; }
 
     QList<QByteArray*>* match(QByteArray *message);
 
@@ -33,7 +34,7 @@ public:
 private:
 
     QRegExp regexp;
-
+    bool active;
 
 };
 
