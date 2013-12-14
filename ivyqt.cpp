@@ -488,8 +488,8 @@ void IvyQt::onIvyClientBye(IvyClient *ivyClient)
             this, SLOT(onIvyClientReady(IvyClient*)));
     disconnect(ivyClient, SIGNAL(ivyClientBye(IvyClient*)),
             this, SLOT(onIvyClientBye(IvyClient*)));
-    disconnect(ivyClient, SIGNAL(ivyMessageReceived(quint16,QList<QByteArray>*,IvyClient*)),
-            this, SLOT(on_ivyMessageReceived(quint16,QList<QByteArray>*,IvyClient*)));
+    disconnect(ivyClient, SIGNAL(ivyMessageReceived(IvyMessage*)),
+            this, SLOT(on_ivyMessageReceived(IvyMessage*)));
 
     logMessage(QString("IvyClient %1 BYE").arg(ivyClient->name),1);
 
