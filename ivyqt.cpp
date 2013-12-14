@@ -389,14 +389,15 @@ void IvyQt::IvySendMsg(QByteArray *msg)
 {
     quint16 msgCount = 0;
     // Find a match
+    // /^ $/
     for(int i = 0; i < clients.count(); i++) {
         for(int j = 0; j < clients.at(i)->subscriptions.count(); j++) {
+            // qDebug() << qPrintable(QString("Checking %1 Pattern '%2' for '%3'").arg(clients.at(i)->name).arg(clients.at(i)->subscriptions.at(j)->pattern()).arg(QString(msg->data())));
             QList<QByteArray*> *matches = clients.at(i)->subscriptions.at(j)->match(msg);
             if (matches != NULL) {
-                if (matches->count()) {
-                    msgCount++;
-                    clients.at(i)->sendTextMessage(clients.at(i)->subscriptions.at(j)->identifier,matches);
-                }
+                // qDebug() << "Match!" << matches->count();
+                msgCount++;
+                clients.at(i)->sendTextMessage(clients.at(i)->subscriptions.at(j)->identifier,matches);
             }
         }
     }
