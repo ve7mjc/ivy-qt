@@ -32,7 +32,7 @@ Subscription::Subscription(const QString *pattern, QObject *parent) :
 void Subscription::init()
 {
     // Default QMetaObject for future checks
-    receiver = 0;
+    slotReceiver = 0;
     active = true;
 }
 

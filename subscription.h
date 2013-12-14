@@ -16,7 +16,6 @@ public:
     void init();
 
     quint16 identifier;
-    // QString string;
 
     void setPattern(const QString pattern);
     void setPattern(QByteArray *pattern) { regexp.setPattern(QString(*pattern)); }
@@ -27,9 +26,10 @@ public:
 
     QList<QByteArray*>* match(QByteArray *message);
 
-    // Callback
-    QObject *receiver;
-    QByteArray member;
+    // Target Slot
+    QObject *slotReceiver;
+    QByteArray slotMember;
+    QByteArray slotParameters;
 
 private:
 

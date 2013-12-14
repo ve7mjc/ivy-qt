@@ -90,6 +90,8 @@ public:
 
     void IvySendMsg(QByteArray *msg);
     void IvySendMsg(const char *msg) { IvySendMsg(new QByteArray(msg)); }
+    void IvySendMsg(QString msg) { IvySendMsg(msg.toUtf8()); }
+    void IvySendMsg(QByteArray msg) { IvySendMsg(&msg); }
 
     int addIvyClient(QHostAddress* host, quint16* port, QString* name, QByteArray *appId = 0);
     void addIvyClient(IvyClient *client);

@@ -58,8 +58,15 @@ int IvyQt::IvyBind(const QString *pattern, QObject *receiver, const char *member
             qWarning("IvyQt::IvyBind: Invalid slot specification");
             return -1;
         }
-        sub->member = QByteArray(member+1, bracketPosition - 1 - member); // extract method name
-        sub->receiver = receiver;
+
+        // Extract method name
+        sub->slotMember = QByteArray(member+1, bracketPosition - 1 - member);
+
+        // Extract Parameters
+        QByteArray parameters = QByteArray(bracketPosition);
+        sub->slotParameters = parameters.mid(1,parameters.count()-2); // remove ()
+
+        sub->slotReceiver = receiver;
     }
 
     // Update to connected clients
@@ -503,11 +510,18 @@ void IvyQt::on_ivyMessageReceived(IvyMessage *ivymsg)
     {
         Subscription* subscription = subscriptionByIdentifier(ivymsg->identifier);
         // Invoke slot if designated for this subscription
-        if (!subscription->member.isEmpty() && subscription->receiver)
+        if (!subscription->slotMember.isEmpty() && subscription->slotReceiver)
         {
             // qRegisterMetaType<QList<QByteArray>*>("QList<QByteArray>*");
-            qRegisterMetaType<IvyMessage*>("IvyMessage*");
-            QMetaObject::invokeMethod(subscription->receiver, subscription->member.constData(), Qt::AutoConnection, Q_ARG(IvyMessage*, ivymsg));
+            // slot(IvyMessage*)
+            if (subscription->slotParameters == "IvyMessage*") {
+                qRegisterMetaType<IvyMessage*>("IvyMessage*");
+                QMetaObject::invokeMethod(subscription->slotReceiver, subscription->slotMember.constData(), Qt::AutoConnection, Q_ARG(IvyMessage*, ivymsg));
+            }
+
+            // slot()
+            if (!subscription->slotParameters.count())
+                QMetaObject::invokeMethod(subscription->slotReceiver, subscription->slotMember.constData(), Qt::AutoConnection);
         }
 
     }
