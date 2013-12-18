@@ -79,9 +79,14 @@ public:
 
     void IvyInit(QByteArray *appName, QByteArray *readyMsg);
     void IvyInit(char *appName, char *readyMsg);
-    void IvyStart(QByteArray network = "");
+    void IvyStart(QString network = "");
     void IvyDie();
     void IvyStop(void);
+
+    // Network stored as valid octals without mask
+    // e.g. 127 for 127.255.255.255
+    void setNetwork(QString bus = "", int port = 0);
+    QString getNetwork() { return busNetwork; }
 
     int IvyBind(const QString *pattern, QObject *receiver = 0, const char *member = 0);
     int IvyBind(const char *pattern, QObject *receiver = 0, const char *member = 0) { return IvyBind(new QString(pattern),receiver,member); }
@@ -134,6 +139,7 @@ private:
 
     bool active; // should this instead be ready?
     bool obeyDieRequest;
+    QString busNetwork;
 
     void broadcast();
 

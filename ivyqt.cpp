@@ -112,35 +112,51 @@ QByteArray IvyQt::generateAppId(quint16 port)
     return appId;
 }
 
+
+void IvyQt::setNetwork(QString network, int port)
+{
+    // Recover and remove port number if present
+    // Set port number if valid
+    qint16 pos = network.indexOf(':');
+    if (pos>=0) {
+        qint16 tempPort = network.mid(pos+1,network.length()-pos).toInt();
+        if ((tempPort <= 65535) && (tempPort >= 1))
+            busPort = tempPort;
+        network.remove(pos,network.length()-pos);
+    }
+
+    // Prefer (int)port if supplied
+    if ((port <= 65535) && (port >= 1)) busPort = port;
+
+    // Assign result
+    this->busNetwork = network;
+}
+
 // Acceptable network formats:
 // <blank>
 // 172.23:2010
 // 172.23.0.0:2010
 // 172.23.255.255:2010
-void IvyQt::IvyStart(QByteArray network)
+void IvyQt::IvyStart(QString network)
 {
+    setNetwork(network);
 
-    // Recover and remove port number if present
-    qint16 pos = network.indexOf(':');
-    if (pos>=0) {
-        qint16 tempPort = network.mid(pos+1,network.length()-pos).toInt();
-        if ((tempPort <= 65535) && (tempPort >= 1)) busPort = tempPort;
-        network.remove(pos,network.length()-pos);
-    }
+    QString validNetwork = this->busNetwork;
 
-    if (network.isEmpty()) network = "255.255.255.255";
+    // Set Default Network if blank network supplied
+    if (validNetwork.isEmpty()) validNetwork = "255.255.255.255";
     else {
         // Build Network Broadcast Address
         // Replace missing octets with 255
         // Replace 0 octets with 255
-        QList<QByteArray> octets = network.split('.');
+        QStringList octets = validNetwork.split('.');
         for(int i = octets.count(); i < 4; i++)
             octets.append("255");
-        network.clear();
+        validNetwork.clear();
         for(int i = 0; i < octets.count(); i++) {
-            if (octets.at(i) != "0") network.append(octets.at(i));
-            else network.append("255");
-            if (i<3) network.append(".");
+            if (octets.at(i) != "0") validNetwork.append(octets.at(i));
+            else validNetwork.append("255");
+            if (i<3) validNetwork.append(".");
         }
     }
 
@@ -151,8 +167,8 @@ void IvyQt::IvyStart(QByteArray network)
 
     // Bind UDP Socket to Network Address
     // Allow multiple processes to share same port
-    busNetworkAddress = QHostAddress(QString(network));
-    udpSocket->bind(QHostAddress(localTcpAddress), busPort, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint);
+    busNetworkAddress = QHostAddress(QString(validNetwork));
+    udpSocket->bind(QHostAddress(localTcpAddress), this->busPort, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint);
 
     // Generate AppId now that we know the port
     appId = generateAppId(localTcpPort);
@@ -162,11 +178,11 @@ void IvyQt::IvyStart(QByteArray network)
 
     if (tcpServer->isListening() && udpSocket->isValid())
     {
-        logMessage(QString("Joined Ivy Bus %1:%2").arg(QString(network)).arg(QString::number(busPort)),1);
+        logMessage(QString("Joined Ivy Bus %1:%2").arg(QString(this->busNetwork)).arg(QString::number(busPort)),1);
         active = true;
         emit joinedIvyBus();
     } else {
-        logMessage(QString("FAILD to join Ivy Bus %1:%2").arg(QString(network)).arg(QString::number(busPort)),1);
+        logMessage(QString("FAILED to join Ivy Bus %1:%2").arg(QString(this->busNetwork)).arg(QString::number(busPort)),1);
     }
 }
 
