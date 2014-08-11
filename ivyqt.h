@@ -72,6 +72,8 @@ class IvyQt : public QObject
     static const quint16 minTcpPort = 1;
     static const quint8 protocolVersionMajor = 3;
     static const quint8 defaultLogLevel = 9;
+    static const QString defaultBusNetwork;
+    static const quint16 defaultBusPort = 2010;
 
 public:
     explicit IvyQt(QObject *parent = 0);
@@ -86,7 +88,7 @@ public:
     // Network stored as valid octals without mask
     // e.g. 127 for 127.255.255.255
     void setNetwork(QString bus = "", int port = 0);
-    QString getNetwork() { return busNetwork; }
+    QStringList getNetworks() { return busNetworks; }
 
     int IvyBind(const QString *pattern, QObject *receiver = 0, const char *member = 0);
     int IvyBind(const char *pattern, QObject *receiver = 0, const char *member = 0) { return IvyBind(new QString(pattern),receiver,member); }
@@ -139,7 +141,9 @@ private:
 
     bool active; // should this instead be ready?
     bool obeyDieRequest;
-    QString busNetwork;
+
+    QStringList busNetworks;
+    QStringList busNetworkMasks;
 
     void broadcast();
 
