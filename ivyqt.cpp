@@ -25,8 +25,8 @@ void IvyQt::init()
     // Apply default log level
     _logLevel = defaultLogLevel;
 
-    // Default to any available IPv4 interface
-    localTcpAddress = QHostAddress::AnyIPv4;
+    // Default to any available interface
+    localTcpAddress = QHostAddress::Any;
 
     // Create UDP socket for multicast
     udpSocket = new QUdpSocket(this);
@@ -115,41 +115,39 @@ QByteArray IvyQt::generateAppId(quint16 port)
 }
 
 
-void IvyQt::setNetwork(QString network, int port)
+void IvyQt::setNetworks(QString networksString)
 {
-    // Recover and remove port number if present
-    // Set port number if valid
-    qint16 pos = network.indexOf(':');
-    if (pos>=0) {
-        qint16 tempPort = network.mid(pos+1,network.length()-pos).toInt();
-        if ((tempPort <= 65535) && (tempPort >= 1))
-            busPort = tempPort;
-        network.remove(pos,network.length()-pos);
-    }
+    // clear existing busses
+    busNetworks.clear();
 
-    // Prefer (int)port if supplied
-    if ((port <= 65535) && (port >= 1)) busPort = port;
+    // apply defaults if no network specified
+    if (!networksString.length())
+        networksString = defaultBusNetwork;
 
-    // Apply defaults if not defined
-    if (!network.isEmpty()) {
-        qDebug() << network;
-        QStringList networks = network.split(",");
-        for (int i = 0; i < networks.count(); i++)
-            qDebug() << networks.at(i);
+    // split string by commas and iterate results
+    QStringList networks = networksString.split(",");
+    for(int i=0;i<networks.count();i++) {
 
-    } else
-        busNetworks.append(defaultBusNetwork);
-    if (!port) port = defaultBusPort;
+        Bus *bus = new Bus;
+        bus->port = 0;
 
-    // Build Network Broadcast Addresses
-    // Replace missing octets with 255
-    // Replace 0 octets with 255
-    QStringList octets;
-    QString networkMask;
-    busNetworkMasks.clear();
-    for (int i = 0; i < busNetworks.count(); i++)
-    {
-        octets = busNetworks.at(i).split('.');
+        QString network = networks.at(i);
+
+        // Recover and remove port number if present
+        // Set port number if valid
+        qint16 pos = network.indexOf(':');
+        if (pos>=0) {
+            bus->port = network.mid(pos+1,network.length()-pos).toInt();
+            network.remove(pos,network.length()-pos);
+        }
+
+        QStringList octets;
+        QString networkMask;
+//        busNetworkMasks.clear();
+
+//        for (int i = 0; i < busNetworks.count(); i++)
+//        {
+        octets = network.split('.');
         for(int i = octets.count(); i < 4; i++)
             octets.append("255");
         for(int i = 0; i < octets.count(); i++) {
@@ -158,12 +156,35 @@ void IvyQt::setNetwork(QString network, int port)
             if (i<3) networkMask.append(".");
         }
         busNetworkMasks.append(networkMask);
-        octets.clear();
-        networkMask.clear();
+//        octets.clear();
+//        networkMask.clear();
+
+        bus->network = network;
+        bus->mask = networkMask;
+        busNetworks.append(bus);
+
+        qDebug() << qPrintable(QString("Ivy Bus at %1:%2 -> %3").arg(network).arg(QString::number(bus->port)).arg(bus->mask));
+        // }
+//        // Apply defaults if not defined
+//        if (!network.isEmpty()) {
+//            QStringList networks = networks.at(i).split(",");
+//            for (int i = 0; i < networks.count(); i++)
+//                qDebug() << networks.at(i);
+
+//        } else
+//            busNetworks.append(defaultBusNetwork);
+//        if (!port) port = defaultBusPort;
+
+        // Build Network Broadcast Addresses
+        // Replace missing octets with 255
+        // Replace 0 octets with 255
+
+
     }
 
+    //todo reassess this one
     // Assign results to IvyQt members
-    this->busPort = port;
+    //this->busPort = port;
 }
 
 // Acceptable network formats:
@@ -171,22 +192,27 @@ void IvyQt::setNetwork(QString network, int port)
 // 172.23:2010
 // 172.23.0.0:2010
 // 172.23.255.255:2010
-void IvyQt::IvyStart(QString network)
+// 172.23.2:2010,127:2010
+void IvyQt::IvyStart(QString networks)
 {
-    setNetwork(network);
+    setNetworks(networks);
 
-    // Request TCPServer to listen on all interfaces
-    // OS provides an unused port
-    tcpServer->listen();
-    localTcpPort = tcpServer->serverPort();
+    // Request TCPServer to listen on all available interfaces
+    // todo: limit interfaces to those in networks above
+    tcpServer->listen(QHostAddress::Any);
+    localTcpPort = tcpServer->serverPort(); // os binds an unused port
 
     // Bind UDP Socket to Network Address
     // Allow multiple processes to share same port (QString(validNetwork))
     // busNetworkAddress = QHostAddress("255.255.255.255");
-    udpSocket->bind(this->busPort, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint);
-    udpSocket->joinMulticastGroup(busNetworkAddress);
+    // todo: manage multiple bus network interfaces and ports
+    udpSocket->bind(QHostAddress::Any, busNetworks.at(0)->port, QUdpSocket::ShareAddress | QUdpSocket::ReuseAddressHint);
+
+    udpSocket->joinMulticastGroup(QHostAddress::Any); // busNetworkAddress
+    qDebug() << qPrintable(QString("udpSocket->joinMulticastGroup(%1)").arg(busNetworkAddress.toString()));
 
     // Generate AppId now that we know the port
+    // todo: take into account multiple interfaces and multiple ports!
     appId = generateAppId(localTcpPort);
 
     // Broadcast our presence via UDP Multicast
@@ -210,12 +236,14 @@ void IvyQt::broadcast()
                                  .arg(agentName);
 
     datagram.append("\n");
+    qDebug() << qPrintable(QString("Datagram: %1").arg(datagram));
 
-    qint64 bytes = udpSocket->writeDatagram(datagram.toUtf8(), datagram.size(), busNetworkAddress, busPort);
-    emit ivyBusTrafficStats(Out,bytes,UDP);
-
-    logMessage(QString("LOCAL -> %1:%2(UDP): %3").arg(busNetworkAddress.toString()).arg(busPort).arg(datagram),1);
-
+    // iterate list of networks!
+    for (int i=0;i<busNetworks.count();i++) {
+        qint64 bytes = udpSocket->writeDatagram(datagram.toUtf8(), datagram.size(), QHostAddress(busNetworks.at(i)->mask), busNetworks.at(i)->port);
+        emit ivyBusTrafficStats(Out,bytes,UDP);
+        logMessage(QString("LOCAL -> %1:%2(UDP): %3").arg(busNetworks.at(i)->mask).arg(QString::number(busNetworks.at(i)->port)).arg(datagram),1);
+    }
 }
 
 void IvyQt::IvyDie()
