@@ -20,8 +20,9 @@ include(ivy-qt/ivy-qt.pri)
 ```
 
 
-When cloning parent projects
+When cloning parent projects, from parent (root) folder of project:
 
-from parent (root) folder of project:
+```
 git submodule init
 git submodule update
+```
